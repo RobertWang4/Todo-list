@@ -3,46 +3,93 @@ document.addEventListener("DOMContentLoaded", function () {
   const button = document.getElementById("add-btn");
   const list = document.getElementById("todo-list");
 
-  button.addEventListener("click", function () {
+  // 🧠 从本地加载 todos
+  const todos = JSON.parse(localStorage.getItem("todos")) || [];
+
+  function saveTodos() {
+    localStorage.setItem("todos", JSON.stringify(todos));
+  }
+
+  function renderTodos() {
+    list.innerHTML = ""; // 清空列表
+
+    todos.forEach((todo, index) => {
+      const li = document.createElement("li");
+      li.className = "todo-item";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = todo.completed;
+      checkbox.className = "todo-checkbox";
+
+      const span = document.createElement("span");
+      span.textContent = todo.text;
+      span.className = "todo-text";
+      if (todo.completed) {
+        span.classList.add("completed");
+      }
+
+      // ✏️ 双击进入编辑模式
+      span.addEventListener("dblclick", () => {
+        const inputEdit = document.createElement("input");
+        inputEdit.type = "text";
+        inputEdit.value = todo.text;
+        inputEdit.className = "input";
+        li.replaceChild(inputEdit, span);
+        inputEdit.focus();
+
+        // 保存编辑结果
+        function saveEdit() {
+          const newText = inputEdit.value.trim();
+          if (newText) {
+            todo.text = newText;
+            saveTodos();
+          }
+          renderTodos();
+        }
+
+        inputEdit.addEventListener("blur", saveEdit);
+        inputEdit.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            saveEdit();
+          }
+        });
+      });
+
+
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "🗑️";
+      delBtn.className = "delete-btn";
+
+      checkbox.addEventListener("change", () => {
+        todo.completed = checkbox.checked;
+        saveTodos();
+        renderTodos();
+      });
+
+      delBtn.addEventListener("click", () => {
+        todos.splice(index, 1);
+        saveTodos();
+        renderTodos();
+      });
+
+      li.appendChild(checkbox);
+      li.appendChild(span);
+      li.appendChild(delBtn);
+      list.appendChild(li);
+    });
+  }
+
+  button.addEventListener("click", () => {
     const text = input.value.trim();
     if (text === "") return;
 
-    const li = document.createElement("li");
-    li.className = "todo-item";
-
-    // 创建 checkbox
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.className = "todo-checkbox";
-
-    // 创建文本
-    const span = document.createElement("span");
-    span.textContent = text;
-    span.className = "todo-text";
-
-    // 创建删除按钮
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "🗑️";
-    delBtn.className = "delete-btn";
-
-    // 勾选完成逻辑
-    checkbox.addEventListener("change", function () {
-      if (checkbox.checked) {
-        span.classList.add("completed");
-      } else {
-        span.classList.remove("completed");
-      }
-    });
-
-    // 删除逻辑
-    delBtn.addEventListener("click", function () {
-      list.removeChild(li);
-    });
-
-    li.appendChild(checkbox);
-    li.appendChild(span);
-    li.appendChild(delBtn);
-    list.appendChild(li);
+    todos.push({ text: text, completed: false });
     input.value = "";
+    saveTodos();
+    renderTodos();
   });
+
+  // 🔁 初次加载页面时显示
+  renderTodos();
 });
